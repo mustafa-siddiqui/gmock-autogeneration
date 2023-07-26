@@ -297,16 +297,21 @@ class MockGenerator:
 
         return "<" in expr
 
-    def __get_arguments(self, tokens: List[str]) -> str:
+    def __get_arguments_and_num_args(self, tokens: List[str]) -> str:
         """
         Processes a list of tokens containing what is read for a
         method by the parser and returns everything in between '()'
-        in the order it is received / processed.
+        in the order it is received / processed, along with the number
+        of arguments determined.
         """
+
         args_with_types = ""
+        number_of_commas_encountered = 0
         reached_end_of_args = False
-        for i in range(0, len(tokens)):
+        for i in range(1, len(tokens)):
+            # We don't want opening bracket in our result
             if tokens[i - 1] == "(":
+                in_between_template_type = False
                 while tokens[i] != ")":
                     args_with_types += tokens[i]
 
@@ -317,17 +322,37 @@ class MockGenerator:
                     #  - before or after '::'
                     #  - before or after '<'
                     if not (
-                        tokens[i + 1] in ["::", ",", ")", "<", ">"]
+                        tokens[i + 1] in ["::", ",", ")", "<", ">", ">>"]
                         or tokens[i] in ["::", "<"]
                     ):
                         args_with_types += " "
+
+                    # Track if we're processing tokens between
+                    # '<' & '>' -- we do not want to take into
+                    # account the commas encountered during this
+                    # since we use that info to determine the
+                    # number of arguments
+                    if tokens[i] == "<":
+                        in_between_template_type = True
+                    elif tokens[i] == ">" or tokens[i] == ">>":
+                        in_between_template_type = False
+                    else:
+                        if tokens[i] == "," and in_between_template_type == False:
+                            number_of_commas_encountered += 1
+
                     i += 1
+
                 reached_end_of_args = True
 
             if reached_end_of_args:
                 break
 
-        return args_with_types
+        if len(args_with_types) == 0:
+            num_args = 0
+        else:
+            num_args = number_of_commas_encountered + 1
+
+        return (num_args, args_with_types)
 
     def __get_result_type(self, tokens: List[str], name: str) -> str:
         """
@@ -426,6 +451,7 @@ class MockGenerator:
         if node.kind == CursorKind.CXX_METHOD:
             spelling = node.spelling
             tokens = [token.spelling for token in node.get_tokens()]
+            num_args, args_with_types = self.__get_arguments_and_num_args(tokens)
             file = node.location.file.name
             mock_methods.setdefault(expr, [file]).append(
                 MockMethod(
@@ -433,8 +459,8 @@ class MockGenerator:
                     name=spelling,
                     is_const=node.is_const_method(),
                     is_template=self.__is_template_class(expr),
-                    args_size=len(list(node.get_arguments())),
-                    args=self.__get_arguments(tokens),
+                    args_size=num_args,
+                    args=args_with_types,
                     args_prefix=name[len(node.spelling) + 1 : -1],
                 )
             )

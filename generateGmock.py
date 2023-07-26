@@ -319,6 +319,7 @@ class MockGenerator:
                     #  - before ','
                     #  - before ')'
                     #  - before '>'
+                    #  - before '>>' (This is interpreted as a single token)
                     #  - before or after '::'
                     #  - before or after '<'
                     if not (

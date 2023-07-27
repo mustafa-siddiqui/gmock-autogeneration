@@ -11,8 +11,8 @@
 - [x] Function paramters that have '`::`' in the typename like `std::string`, `std::vector`, `std::shared_ptr` 
 are being replaced with `int`. This issue doesn't exist if such types are being returned by a function
 - [x] Parameter names are missing from the generated mock methods
-- [ ] Update string (%s) formatter use to `python3` `.format()` or equivalent
-    - [ ] Ideal goal would be upgrade this to use `.mustache` files or something similar
+- [x] Update string (%s) formatter use to `python3` `.format()` or equivalent
+    - [x] Ideal goal would be upgrade this to use `.mustache` files or something similar
 - [x] Randomly omitting functions when creating mock methods??
     - [x] Removing the check for a pure virtual function fixes this
     > Note: That check ideally should be there but it doesn't return true for some functions despite them being declared pure virtual.
@@ -21,32 +21,51 @@ are being replaced with `int`. This issue doesn't exist if such types are being 
     > Note: Not really sure of the reason why. Suspicion
     is probably due to lack of support or some error when 
     evaluating a return type like that. Nice to fix but can also just be called out at this point.
+- [ ] Currently, when the `operator()` is defined, incorrect # of args will be returned. This is because 
+    the function wasn't intended to handle that case but it definitely should handle those cases if the 
+    script is supporting those use cases.
+- [ ] Support `>>` or `>>>` directly in the function isn't robust and will break if an unusual parameter
+    is given and those types are parsed.
           
 
 ### Notes
 
-</>
+The script is now upto python3 standards, uses mustache files for templates, is very much
+simplified, majorly refactored, and much new code has been introduced.
 
 ---------
 
 ### Requirements
- + [python](http://www.python.org) (tested with 2.7 and 3.3)
- + [libclang](http://clang.llvm.org) (tested with 3.2 and 3.3)
+ + [python](http://www.python.org) (3.9+)
+ + [libclang](http://clang.llvm.org) (16.0.0+)
+
+See `requirements.txt` for module dependencies.
 
 ### Download
 ```
-git clone --recursive git@github.com:krzysztof-jusiak/gmock.git
+git clone git@github.com:mustafa-siddiqui/gmock-autogeneration.git
 ```
 
 ### Usage
 ```sh
-Usage: gmock.py [options] files...
+Usage: generateGmock.py [-h] [-d DIR] -f FILE [-e EXPR] [-l LIBCLANG]
 
-Options:
-  -h, --help                show this help message and exit
-  -c FILE, --config=FILE    config FILE (default='gmock.conf')
-  -d DIR, --dir=DIR         dir for generated mocks (default='.')
-  -l LIMIT, --limit=LIMIT   limit to interfaces within declaration (default='')
+Generate gmock files from an interface given mustache templates.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -d DIR, --dir DIR     Directory to store generated mock files in. Default = current directory.
+  -f FILE, --file FILE  Path to the interface file from which the mock file is to be generated.
+  -e EXPR, --expr EXPR  Limit to interfaces within expression. Default = ''
+  -l LIBCLANG, --libclang LIBCLANG
+                        Path to libclang.so. Default = None
+```
+
+----
+```
+ |  
+ |   Needs to be updated.  
+ V  
 ```
 
 ### Example

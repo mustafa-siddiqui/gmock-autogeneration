@@ -1,0 +1,27 @@
+/**
+ * @file    {{{ mock_file_hpp }}}
+ * @brief   Definition of a mock class for {{{ interface }}} interface.
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
+
+#ifndef {{{ guard }}}
+#define {{{ guard }}}
+
+#include "{{{ file }}}"
+
+{{{ namespaces_begin }}}
+
+{{{ template }}}class {{{ class_name }}} : public {{{ template_interface }}}
+{
+public:
+{{{ class_name }}}();
+~{{{ class_name }}}() override;
+
+{{{ mock_methods }}}
+};
+
+{{{ namespaces_end }}}
+
+#endif /* {{{ guard }}} */

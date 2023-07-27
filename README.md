@@ -1,4 +1,7 @@
-# **Google Mock** mocks generator based on libclang
+# Google Mock Files Auto-generation
+
+Generate gmock files based on the Google Mock framework using libclang -- the Python keybindings for the 
+C interface to the Clang compiler -- given mustache templates.
 
 ---------
 

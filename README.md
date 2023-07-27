@@ -1,4 +1,4 @@
-# Google Mock Files Auto-generation
+# Google Mock Files Auto-generation [WIP]
 
 Generate gmock files based on the Google Mock framework using libclang -- the Python keybindings for the 
 C interface to the Clang compiler -- given mustache templates.

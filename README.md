@@ -1,7 +1,11 @@
-# Google Mock Files Auto-generation [WIP]
+# Google Mock Files Auto-Generator
 
 Generate gmock files based on the Google Mock framework using libclang -- the Python keybindings for the 
 C interface to the Clang compiler -- given mustache templates.
+
+> This is intended for use as a starting building block to write your mock files, NOT as a drop-in 
+replacement for generating mock files based on your interface files. Use it as a tool to shorten 
+development effort and time :)
 
 ---------
 
@@ -24,33 +28,22 @@ are being replaced with `int`. This issue doesn't exist if such types are being 
     > Note: Not really sure of the reason why. Suspicion
     is probably due to lack of support or some error when 
     evaluating a return type like that. Nice to fix but can also just be called out at this point.
-- [ ] Currently, when the `operator()` is defined, incorrect # of args will be returned. This is because 
+- [x] Currently, when the `operator()` is defined, incorrect # of args will be returned. This is because 
     the function wasn't intended to handle that case but it definitely should handle those cases if the 
     script is supporting those use cases.
-- [ ] Support `>>` or `>>>` directly in the function isn't robust and will break if an unusual parameter
+- [x] Support `>>` or `>>>` directly in the function isn't robust and will break if an unusual parameter
     is given and those types are parsed.
-          
-
-### Notes
-
-The script is now upto python3 standards, uses mustache files for templates, is very much
-simplified, majorly refactored, and much new code has been introduced.
-
----------
 
 ### Requirements
+
  + [python](http://www.python.org) (3.9+)
  + [libclang](http://clang.llvm.org) (16.0.0+)
 
 See `requirements.txt` for module dependencies.
 
-### Download
-```
-git clone git@github.com:mustafa-siddiqui/gmock-autogeneration.git
-```
-
 ### Usage
-```sh
+
+```bash
 Usage: generateGmock.py [-h] [-d DIR] -f FILE [-e EXPR] [-l LIBCLANG]
 
 Generate gmock files from an interface given mustache templates.
@@ -64,169 +57,195 @@ optional arguments:
                         Path to libclang.so. Default = None
 ```
 
-----
-```
- |  
- |   Needs to be updated.  
- V  
-```
+### Supported Features
+
+- Works with templated interfaces
+- Supports most, if not all, operator overloads
+- Generates a separate file for mock constructor & destructor implementation
+- Can output files in a specified directory
+- Outputs formatted files using `clang-format`
+- Given file can have multiple interface class definitions and the appropriate mock files will be 
+created for each defined interface class
+
+### Known Limitations
+- Works with a stand-alone interface class i.e. will only mock methods mentioned 
+in the given file
+    - If the interface inherits from another interface, it will not mock methods in that interface
+- Due to some limitations (or possible errors) of libclang, methods that return complex types
+like `boost::optional<std::vector<std::pair<int, std::string>>>` are not read as CXX methods for some reason, 
+and hence not mocked
+    - You would have to manually add those methods to the generated file
 
 ### Example
-```sh
-./gmock.py file.hpp
-```
-will create mocks files in current directory for all interfaces
 
-```sh
-./gmock.py -c "gmock.conf" -d "test/mocks" -l "namespace::class" file1.hpp file2.hpp
-```
-will create directory 'test/mocks' and mocks files within this directory for all interfaces (contains at least one pure virtual function)
-which will be within 'namespace::class' declaration
+Note that this example contains two class definitions in one file.
 
-```sh
-./gmock.py -d "test/mocks" file1.hpp file2.hpp -- -D PROJECT -Iproject/include
-```
-'--' separates arguments between script and compiler
-
-### Integration with the build system
-```sh
-find project -iname "*.h" -or -iname "*.hpp" | xargs "project/externals/gmock.py"   \
-    -c "project/conf/gmock.conf"                                                    \
-    -d "project/test/mocks"                                                         \
-    -l "Project"                                                                    \
-    --                                                                              \
-    -D PROJECT                                                                      \
-    -Iproject/include                                                               \
-```
-
-### Features
- + it's reliable (based on clang compiler)
- + it's fast (tested on project ~200 kloc -> generation of mocs takes 3-5s on common laptop)
- + output file might be easily adopted to the project via configuration file
- + easy integration with the project build system -> generate mocks files for each interface from given files limited to the project (for example via project namespace)
- + able to generate cpp files with default constructors (to speed up compilation times)
- + generate pretty output (one mock per file)
- + mocking class templates
- + easy to extend (~300 lines of code)
- + handle c++ operators
-
-```cpp
-    virtual int operator()(int, double) = 0;
-```
-
-```cpp
-    virtual int operator()(int arg0, double arg1) { return call_operator(arg0, arg1); }
-    MOCK_METHOD2(call_operator, int(int, double));
-```
-
-### Configuration file
-```python
-#possible variables:
-# file: interface file name
-# dir: interface directory
-# guard: header guard
-# template: template parameters
-# template_interface: template interface class
-# interface: interface class
-# mock_methods: generated gmock methods
-# generated_dir: generated directory
-# mock_file_hpp: mock header file
-# mock_file_cpp: mock source file
-
-mock_file_hpp = "%(interface)sMock.hpp"
-
-file_template_hpp = """\
-/*
- * file generated by gmock: %(mock_file_hpp)s
+#### Input interface file
+```c++
+/**
+ * @file sample-intf.h
+ * @brief Sample interface for gmock auto-generation.
+ * @date 2023-08-03
+ *
+ * @copyright Copyright (c) 2023
+ *
  */
-#ifndef %(guard)s
-#define %(guard)s
 
-#include <gmock/gmock.h>
-#include "%(dir)s/%(file)s"
+#ifndef SAMPLE_INTF_H_
+#define SAMPLE_INTF_H_
 
-%(namespaces_begin)s
+#include <string>
+#include <vector>
 
-%(template)sclass %(interface)sMock : public %(template_interface)s
+template <typename T>
+class BASE_INTF
 {
-public:
-%(mock_methods)s
+    virtual void baseFunc(T var) = 0;
 };
 
-%(namespaces_end)s
+template <typename T>
+class SAMPLE_INTF : public BASE_INTF<T>
+{
+    /**
+     * @brief Sample method 1.
+     *
+     * @param input
+     * @return boost::optional<int>
+     */
+    virtual boost::optional<int> optionalReturnMethod(std::string input) const = 0;
 
-#endif // %(guard)s
+    /**
+     * @brief Getter for property.
+     *
+     * @return T
+     */
+    virtual T getMyProperty() const = 0;
 
-"""
+    /**
+     * @brief Setter for property.
+     *
+     * @param property
+     */
+    virtual void setMyProperty(T property) = 0;
 
-mock_file_cpp = ""
-file_template_cpp = ""
+    /**
+     * @brief Multiple param method.
+     *
+     * @param num
+     * @param word
+     * @param flag
+     * @return vector of strings
+     */
+    virtual std::vector<std::string> multipleParamMethod(int num, std::string word, bool flag) = 0;
+};
+
+#endif // SAMPLE_INTF_H_
+```
+
+#### Output mock files
+
+- `sample-gmock.h`:
+```c++
+/**
+ * @file    sample-gmock.h
+ * @brief   Definition of a mock class for SAMPLE interface.
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
+
+#ifndef SAMPLE_GMOCK_H_
+#define SAMPLE_GMOCK_H_
+
+#include "sample-intf.h"
+
+template <typename T>
+class SAMPLE_GMOCK : public SAMPLE_INTF<T>
+{
+public:
+  SAMPLE_GMOCK();
+  ~SAMPLE_GMOCK() override;
+
+  MOCK_CONST_METHOD1_T(optionalReturnMethod,
+                       boost::optional<int>(std::string input));
+  MOCK_CONST_METHOD0_T(getMyProperty, T());
+  MOCK_METHOD1_T(setMyProperty, void(T property));
+  MOCK_METHOD3_T(multipleParamMethod,
+                 std::vector<std::string>(int num, std::string word,
+                                          bool flag));
+};
+
+#endif /* SAMPLE_GMOCK_H_ */
 
 ```
 
-### Example of generated output
-```cpp
-/*
- * file generated by gmock: I2Mock.hpp
+- `sample-gmock.cpp`:
+```c++
+/**
+ * @file    sample-gmock.cpp
+ * @brief   Implementation of a mock class for SAMPLE interface.
+ *
+ * @copyright Copyright (c) 2023
+ *
  */
-#ifndef I2MOCK_HPP
-#define I2MOCK_HPP
 
-#include <gmock/gmock.h>
-#include "I2.hpp"
+#include "sample-gmock.h"
 
-namespace n {
-
-class I2Mock : public I2
-{
-public:
-    MOCK_CONST_METHOD0(f0, void());
-    MOCK_METHOD1(f1, void(int));
-    MOCK_METHOD1(f2, void(double));
-    MOCK_METHOD2(f3, void(int, double));
-    MOCK_METHOD3(f4, void(int, double, const std::string &));
-    MOCK_METHOD1(f5, int(const std::string &));
-    MOCK_CONST_METHOD1(f6, boost::shared_ptr<int>(const boost::shared_ptr<int> &));
-    MOCK_CONST_METHOD0(f7, const int&());
-    MOCK_METHOD0(f8, boost::function<void(int)>());
-    MOCK_CONST_METHOD1(f9, boost::non_type<int,0>(const boost::non_type<int, 1> &));
-    MOCK_METHOD0(f10, const int*const ());
-    MOCK_METHOD0(f11, const void());
-    virtual int operator()() { return function_call_or_cast_operator(); }
-    MOCK_METHOD0(function_call_or_cast_operator, int());
-};
-
-} // namespace n
-
-#endif // I2MOCK_HPP
+template <typename T>
+SAMPLE_GMOCK<T>::SAMPLE_GMOCK() = default;
+template <typename T>
+SAMPLE_GMOCK<T>::~SAMPLE_GMOCK() = default;
 
 ```
 
-```cpp
-/*
- * file generated by gmock: TMock.hpp
+- `base-gmock.h`:
+```c++
+/**
+ * @file    base-gmock.h
+ * @brief   Definition of a mock class for BASE interface.
+ *
+ * @copyright Copyright (c) 2023
+ *
  */
-#ifndef TMOCK_HPP
-#define TMOCK_HPP
 
-#include <gmock/gmock.h>
-#include "T.hpp"
+#ifndef BASE_GMOCK_H_
+#define BASE_GMOCK_H_
 
-namespace n {
+#include "simple-intf.h"
 
-template<typename Elem>
-class TMock : public T<Elem>
+template <typename T>
+class BASE_GMOCK : public BASE_INTF<T>
 {
 public:
-    MOCK_CONST_METHOD0_T(GetSize, int());
-    MOCK_METHOD1_T(Push, void(const Elem &));
+  BASE_GMOCK();
+  ~BASE_GMOCK() override;
+
+  MOCK_METHOD1_T(baseFunc, void(T var));
 };
 
-} // namespace n
+#endif /* BASE_GMOCK_H_ */
 
-#endif // TMOCK_HPP
+```
+
+- `base-gmock.cpp`:
+```c++
+/**
+ * @file    base-gmock.cpp
+ * @brief   Implementation of a mock class for BASE interface.
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
+
+#include "base-gmock.h"
+
+template <typename T>
+BASE_GMOCK<T>::BASE_GMOCK() = default;
+template <typename T>
+BASE_GMOCK<T>::~BASE_GMOCK() = default;
+
 ```
 
 ### License
-Distributed under the [Boost Software License, Version 1.0](http://www.boost.org/LICENSE_1_0.txt).
 
+Distributed under the [Boost Software License, Version 1.0](http://www.boost.org/LICENSE_1_0.txt).

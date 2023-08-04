@@ -50,7 +50,8 @@ in the given file
 - Due to some limitations (or possible errors) of libclang, methods that return complex types
 like `boost::optional<std::vector<std::pair<int, std::string>>>` are not read as CXX methods for some reason, 
 and hence not mocked
-    - You would have to manually add those methods to the generated file
+    - You would have to manually add those methods to the generated file  
+    - [ ] Investigate specifing which version of c++ (c++14, c++11 etc.) libclang should use (possible fix)
 
 ### Example
 

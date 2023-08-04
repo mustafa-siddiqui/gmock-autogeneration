@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
+
 #
 # Copyright (c) 2014 Krzysztof Jusiak (krzysztof at jusiak dot net)
 #
 # Distributed under the Boost Software License, Version 1.0.
 #
-# =============================================================================
-#
-# Modified and upgraded by Mustafa Siddiqui (c) 2023.
-#
-# =============================================================================
-#
+
+"""
+@file       generateGmock.py
+@brief      Generate mock class files from a given interface file based 
+            on the Google Mock framework using libclang.
+@authors    Krzysztof Jusiak (c) 2014 [krzysztof at jusiak dot net]
+            Mustafa Siddiqui (c) 2023
+@copyright  (c) Distributed under the Boost Software License, Version 1.0.
+"""
 
 import argparse
 import os
@@ -225,10 +229,10 @@ class MockMethod:
                 % {
                     "result_type": self.result_type,
                     "name": self.name,
-                    "args": self._named_args_with_types(),
+                    "args": self.args,
                     "const": self.is_const and "const " or "",
                     "return": self.result_type.strip() != "void" and "return" or "",
-                    "body": self.operators[self.name] + "(" + self._named_args() + ")",
+                    "body": self.operators[self.name] + "(" + self.args + ")",
                 }
             )
             name = self.operators[self.name]
@@ -286,11 +290,15 @@ class MockGenerator:
         number_of_commas_encountered = 0
         reached_end_of_args = False
 
-        # ToDo: Account for when you have the 'operator' keyword
-        # in the tokens (This will incorrectly return 0 args for
-        # when the operator() is defined).
-
         for i in range(1, len(tokens)):
+            # Handle special case of function call operator
+            # If this is not done, the function will think that
+            # upon reaching the closing parenthesis, we have reached
+            # the end of the arguments -- which is not the case
+            if tokens[i - 1] == "operator":
+                if tokens[i] == "(" and tokens[i + 1] == ")":
+                    i = i + 3
+
             # We don't want opening bracket in our result
             if tokens[i - 1] == "(":
                 in_between_template_type = False

@@ -617,13 +617,18 @@ def main(args):
     ).generate_data()
 
     # Generate mock files based on mustache templates
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+
+    template_h_file_path = dir_path + "/templates/gmock-template-h.mustache"
     generate_rendered_mustache_file(
-        template_file="templates/gmock-template-h.mustache",
+        template_file=template_h_file_path,
         output_file=replacements["mock_file_hpp"],
         data=replacements,
     )
+
+    template_cpp_file_path = dir_path + "/templates/gmock-template-cpp.mustache"
     generate_rendered_mustache_file(
-        template_file="templates/gmock-template-cpp.mustache",
+        template_file=template_cpp_file_path,
         output_file=replacements["mock_file_cpp"],
         data=replacements,
     )

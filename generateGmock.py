@@ -502,6 +502,24 @@ class MockGenerator:
 
         interfaceNameObj = StringTransform(self._get_interface(expr))
 
+        def _get_templated_class_name(
+            className: str, template_interface_name: str
+        ) -> str:
+            """
+            Helper method to create a templated class name if the interface
+            is templated.
+            template_interface_name = OBJ_INTF<T1, T2> etc.
+            """
+
+            template_typenames = template_interface_name.split("<")
+            template_typenames = "<" + template_typenames[-1]
+
+            return className + template_typenames
+
+        templatedClassName = _get_templated_class_name(
+            interfaceNameObj.gmock_class_name, expr.split("::")[-1]
+        )
+
         replacements = {
             "mock_file_hpp": interfaceNameObj.gmock_h_file_name,
             "mock_file_cpp": interfaceNameObj.gmock_cpp_file_name,
@@ -511,6 +529,7 @@ class MockGenerator:
             "namespaces_begin": self._pretty_namespaces_begin(expr),
             "interface": interfaceNameObj._snake_case.upper(),
             "class_name": interfaceNameObj.gmock_class_name,
+            "template_class_name": templatedClassName,
             "template_interface": expr.split("::")[-1],
             "template": self._pretty_template(expr),
             "mock_methods": self._pretty_mock_methods(mock_methods_list[1:]),

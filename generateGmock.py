@@ -305,19 +305,17 @@ class MockGenerator:
                 while tokens[i] != ")":
                     args_with_types += tokens[i]
 
-                    # ToDo: What if the token has '>>>' or '>>>>'?
-                    # Need to handle this situation in a more robust manner.
-
                     # Don't insert spaces
                     #  - before ','
                     #  - before ')'
                     #  - before '>'
-                    #  - before '>>' (This is interpreted as a single token)
+                    #  - before '>>', '>>>', '>>>>' etc. (they are parsed as single tokens)
                     #  - before or after '::'
                     #  - before or after '<'
                     if not (
-                        tokens[i + 1] in ["::", ",", ")", "<", ">", ">>"]
+                        tokens[i + 1] in ["::", ",", ")", "<", ">"]
                         or tokens[i] in ["::", "<"]
+                        or (tokens[i + 1][0] == ">" and tokens[i + 1][-1] == ">")
                     ):
                         args_with_types += " "
 
@@ -328,7 +326,7 @@ class MockGenerator:
                     # number of arguments
                     if tokens[i] == "<":
                         in_between_template_type = True
-                    elif tokens[i] == ">" or tokens[i] == ">>":
+                    elif tokens[i + 1][0] == ">" and tokens[i + 1][-1] == ">":
                         in_between_template_type = False
                     else:
                         if tokens[i] == "," and in_between_template_type == False:

@@ -503,7 +503,7 @@ class MockGenerator:
         interfaceNameObj = StringTransform(self._get_interface(expr))
 
         def _get_templated_class_name(
-            className: str, template_interface_name: str
+            className: str, templateInterfaceName: str
         ) -> str:
             """
             Helper method to create a templated class name if the interface
@@ -511,7 +511,11 @@ class MockGenerator:
             template_interface_name = OBJ_INTF<T1, T2> etc.
             """
 
-            template_typenames = template_interface_name.split("<")
+            # If interface not templated, return class name as is
+            if "<" not in templateInterfaceName:
+                return className
+
+            template_typenames = templateInterfaceName.split("<")
             template_typenames = "<" + template_typenames[-1]
 
             return className + template_typenames

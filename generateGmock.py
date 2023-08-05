@@ -262,6 +262,7 @@ class MockGenerator:
     def __init__(
         self,
         file: str,
+        clang_args: List[str],
         expr: str,
         path: str,
         encode: str = "utf-8",
@@ -269,7 +270,20 @@ class MockGenerator:
         self.expr = expr
         self.path = path
         self.encode = encode
-        self.cursor = self._parse(file).cursor
+        self.cursor = self._parse(file, clang_args).cursor
+
+    def _parse(self, file: str, clang_args: List[str]) -> TranslationUnit:
+        tmp_file = b"~.hpp"
+
+        include = f'#include "{file}"\n'
+
+        return Index.create(excludeDecls=False).parse(
+            path=tmp_file,
+            args=clang_args,
+            unsaved_files=[(tmp_file, bytes(include, self.encode))],
+            options=TranslationUnit.PARSE_SKIP_FUNCTION_BODIES
+            | TranslationUnit.PARSE_INCOMPLETE,
+        )
 
     def _is_template_class(self, expr: str) -> bool:
         """
@@ -471,18 +485,6 @@ class MockGenerator:
         else:
             [self._get_mock_methods(c, mock_methods, expr) for c in node.get_children()]
 
-    def _parse(self, file: str) -> TranslationUnit:
-        tmp_file = b"~.hpp"
-
-        include = f'#include "{file}"\n'
-
-        return Index.create(excludeDecls=False).parse(
-            path=tmp_file,
-            unsaved_files=[(tmp_file, bytes(include, self.encode))],
-            options=TranslationUnit.PARSE_SKIP_FUNCTION_BODIES
-            | TranslationUnit.PARSE_INCOMPLETE,
-        )
-
     def generate_data(self) -> dict:
         """
         Parses the input interface file, generates mock methods, and populates the
@@ -565,6 +567,28 @@ def generate_rendered_mustache_file(
         h_file_rendered.write(rendered_data)
 
 
+def create_clang_args(cpp_version: int) -> List[str]:
+    """
+    Creates a list of string to create clang arguments in the needed format.
+    Currently supports specifying the cpp version.
+    """
+
+    def create_cpp_version_clang_arg(cpp_version: int) -> str:
+        """
+        Creates a string in the format "-std=c++y where y = cpp_version.
+        """
+        if cpp_version is None:
+            return ""
+
+        if cpp_version not in [11, 14, 17, 20]:
+            print("warning: Unsupported cpp version given. Using default version.")
+            return ""
+
+        return "-std=c++" + str(cpp_version)
+
+    return [create_cpp_version_clang_arg(cpp_version)]
+
+
 #
 # Main
 #
@@ -607,13 +631,23 @@ def main(args):
         default=None,
     )
 
+    parser.add_argument(
+        "-v",
+        "--cpp-version",
+        help="Version of C++ you want to specify to clang e.g. -std=c++14",
+        type=int,
+        default=None,
+    )
+
     args = parser.parse_args()
 
     if args.libclang:
         Config.set_library_file(args.libclang)
 
+    clang_args = create_clang_args(args.cpp_version)
+
     replacements = MockGenerator(
-        file=args.file, expr=args.expr, path=args.dir
+        file=args.file, clang_args=clang_args, expr=args.expr, path=args.dir
     ).generate_data()
 
     # Generate mock files based on mustache templates

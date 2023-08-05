@@ -47,11 +47,10 @@ created for each defined interface class
 in the given file
     - If the interface inherits from another interface, it will not mock methods in that interface unless 
     that interface is not defined in the same file as well (which imo is not really a limitation but how it should be)
-- Due to some limitations (or possible errors) of libclang, methods that return complex types
+- Due to some limitations (or possible errors) of libclang, methods that **return** complex types
 like `boost::optional<std::vector<std::pair<int, std::string>>>` are not read as CXX methods for some reason, 
 and hence not mocked
-    - You would have to manually add those methods to the generated file  
-    - [ ] Investigate specifing which version of c++ (c++14, c++11 etc.) libclang should use (possible fix)
+    - You would have to manually add those methods to the generated file
 
 ### Example
 

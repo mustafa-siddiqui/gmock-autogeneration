@@ -42,11 +42,12 @@ optional arguments:
 - Given file can have multiple interface class definitions and the appropriate mock files will be 
 created for each defined interface class
 
+> Note: Works with a stand-alone interface class i.e. will only mock methods mentioned in the given file
+> - If the interface inherits from another interface, it will not mock methods in that interface unless 
+    that interface is not defined in the same file as well
+
 ### Known Limitations
-- Works with a stand-alone interface class i.e. will only mock methods mentioned 
-in the given file
-    - If the interface inherits from another interface, it will not mock methods in that interface unless 
-    that interface is not defined in the same file as well (which imo is not really a limitation but how it should be)
+
 - Due to some limitations (or possible errors) of libclang, methods that **return** complex types
 like `boost::optional<std::vector<std::pair<int, std::string>>>` are not read as CXX methods for some reason, 
 and hence not mocked
